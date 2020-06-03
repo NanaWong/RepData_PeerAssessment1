@@ -1,0 +1,78 @@
+---
+title: "Activity Analysis"
+author: "nana"
+date: "6/2/2020"
+output: html_document
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Loading and preprocessing the data
+```{r}
+activity <- read.csv("activity.csv", header = TRUE)
+activity$date <- as.Date(activity$date)
+str(activity)
+```
+
+#### What is mean total number of steps taken per day?
+The mean and median is
+```{r}
+total_every_day <- aggregate(activity["steps"], by=activity["date"], sum)
+summary(total_every_day$steps)
+```
+
+Make a histogram of the total number of steps taken each day.
+```{r}
+hist(total_every_day$steps, main = "Histogram of Total Number of Steps per Day on  Impute Value",  xlab = "Total Number of Steps per Day", ylab = "Frequency", col = "purple", breaks = 30)
+```
+
+#### What is the average daily activity pattern?
+Get mean of steps and plot time series
+```{r}
+time_series <- tapply(activity$steps, activity$interval, mean, na.rm = TRUE)
+plot(row.names(time_series), time_series, type = "l", xlab = "5-min interval", ylab = "Average across all Days", main = "Average number of steps taken", col = "pink", lwd=2)
+```
+
+Find which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps
+```{r}
+max_interval <- which.max(time_series)
+names(max_interval)
+```
+
+#### Imputing missing values
+The total number of missing values in the dataset
+```{r}
+sum(is.na(activity))
+```
+Replace with mean steps of 5 min interval
+```{r}
+activity$steps[is.na(activity$steps)] <- mean(activity$steps, na.rm = T)
+sum(is.na(activity))
+```
+####New total number of steps 
+
+```{r}
+total_every_day <- aggregate(activity["steps"], by=activity["date"], sum)
+summary(total_every_day$steps)
+hist(total_every_day$steps, main = "Histogram of Total Number of Steps per Day on  Impute Value",  xlab = "Total Number of Steps per Day", ylab = "Frequency", col = "yellow", breaks = 30)
+```
+
+So after filling in NAs with mean, mean stay the same but the median is a bit different. And new data seems less skewed.
+
+#### Are there differences in activity patterns between weekdays and weekends?
+Label each day with "weekday" and "weekend", get mean for each 5 min interval and two categories of days.
+```{r}
+activity$weekdays <- weekdays(activity$date)
+activity$weeks[(activity$weekdays == "Saturday" | activity$weekdays == "Sunday")] <- "weekend"
+activity$weeks[!(activity$weekdays == "Saturday" | activity$weekdays == "Sunday")] <- "weekdays"
+new_time_series <- aggregate(steps ~ interval + weeks, data = activity, mean)
+```
+Plot 
+```{r}
+library(lattice)
+xyplot(steps ~ interval | weeks, new_time_series, type = "l", layout = c(1, 2),xlab = "Interval", ylab = "Number of steps", lwd=2)
+```
+
+Comparing to his activity on weekend, this person walks more in the morning but less in the afternoon on weekdays.
